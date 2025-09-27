@@ -24,14 +24,109 @@ export default function PhotoUpload({ onPhotoUpload, isProcessing = false }: Pho
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (selectedFile) {
+      try {
+        // Send the image directly to our image analysis API
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        const response = await fetch('/api/analyze-image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Image analysis result:', result);
+          
+          if (result.success) {
+            // Parse the analysis and create shopping list items
+            await createShoppingListItems(result.analysis);
+          } else {
+            console.error('Image analysis failed:', result.error);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('Failed to send image to agent:', response.status, errorText);
+        }
+      } catch (error) {
+        console.error('Error processing image:', error);
+      }
+      
       onPhotoUpload(selectedFile);
       setShowPreview(false);
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const createShoppingListItems = async (analysis: string) => {
+    try {
+      // Parse the analysis result and create shopping list items
+      const lines = analysis.split('\n');
+      const items = [];
+      let currentItem = null;
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.match(/^\d+\./)) {
+          // New item
+          if (currentItem) {
+            items.push(currentItem);
+          }
+          currentItem = {
+            name: trimmed.replace(/^\d+\.\s*/, ''),
+            quantity: '',
+            description: '',
+            category: ''
+          };
+        } else if (trimmed.startsWith('Quantity:')) {
+          if (currentItem) {
+            currentItem.quantity = trimmed.replace('Quantity:', '').trim();
+          }
+        } else if (trimmed.startsWith('Description:')) {
+          if (currentItem) {
+            currentItem.description = trimmed.replace('Description:', '').trim();
+          }
+        } else if (trimmed.startsWith('Category:')) {
+          if (currentItem) {
+            currentItem.category = trimmed.replace('Category:', '').trim();
+          }
+        }
+      }
+      
+      if (currentItem) {
+        items.push(currentItem);
+      }
+      
+      // Send items to the agent via chat to create them
+      for (const item of items) {
+        if (item.name) {
+          const message = `Create a shopping list item: ${item.name}${item.quantity ? ` (${item.quantity})` : ''}${item.description ? ` - ${item.description}` : ''}${item.category ? ` [Category: ${item.category}]` : ''}`;
+          
+          await fetch('/api/copilotkit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [
+                {
+                  role: 'user',
+                  content: message
+                }
+              ]
+            })
+          });
+        }
+      }
+      
+      console.log(`Created ${items.length} shopping list items`);
+    } catch (error) {
+      console.error('Error creating shopping list items:', error);
     }
   };
 

@@ -1473,16 +1473,21 @@ export default function CopilotKitPage() {
       className="h-screen flex flex-col"
       suppressHydrationWarning={true}
     >
+      {/* Full-Width Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-1">SnapCart</h1>
+            <p className="text-blue-100 text-lg">AI-Powered Shopping Assistant - Upload photos to detect items and compare prices on Amazon and Walmart</p>
+          </div>
+        </div>
+      </header>
+
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Chat Sidebar */}
         <aside className="-order-1 max-md:hidden flex flex-col min-w-80 w-[30vw] max-w-120 p-4 pr-0">
           <div className="h-full flex flex-col align-start w-full shadow-lg rounded-2xl border border-sidebar-border overflow-hidden">
-            {/* SnapCart Branding */}
-            <div className="px-6 py-4 border-b border-sidebar-border bg-gradient-to-r from-blue-600 to-purple-600">
-              <h1 className="text-2xl font-bold text-white">SnapCart</h1>
-              <p className="text-sm text-blue-100">AI-Powered Shopping Assistant</p>
-            </div>
             {/* Chat Header */}
             <AppChatHeader />
             {/* Chat Content - conditionally rendered to avoid duplicate rendering */}
@@ -1522,11 +1527,6 @@ export default function CopilotKitPage() {
             <div className="flex flex-1 gap-6 p-6 overflow-hidden">
               {/* Center Content - Photo Upload and Item List */}
               <div className="flex-1 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
-                  <h1 className="text-3xl font-bold mb-2">SnapCart</h1>
-                  <p className="text-blue-100">Upload a photo to detect items and compare prices on Amazon and Walmart</p>
-                </div>
 
                 {/* Photo Upload Section */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">

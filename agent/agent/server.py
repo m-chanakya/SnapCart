@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional
 import os
+import base64
 
 # Load environment variables from .env/.env.local (repo root or agent dir) if present
 try:
@@ -27,7 +28,7 @@ def _load_env_files() -> None:
 
 _load_env_files()
 
-from .agent import agentic_chat_router
+from .agent import agentic_chat_router, analyze_shopping_image
 from .sheets_integration import get_sheet_data, convert_sheet_to_canvas_items, sync_canvas_to_sheet, get_sheet_names, create_new_sheet
 
 app = FastAPI()
@@ -45,6 +46,11 @@ class CanvasToSheetSyncRequest(BaseModel):
 
 class CreateSheetRequest(BaseModel):
     title: str
+
+class ImageAnalysisResponse(BaseModel):
+    success: bool
+    analysis: str
+    error: Optional[str] = None
 
 # Sheets sync endpoint
 @app.post("/sheets/sync")
@@ -216,4 +222,47 @@ async def create_sheet(request: CreateSheetRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
+        )
+
+@app.post("/analyze-image", response_model=ImageAnalysisResponse)
+async def analyze_image(file: UploadFile = File(...)):
+    """
+    Analyze an uploaded image to identify shopping items.
+    
+    Args:
+        file: Image file to analyze
+        
+    Returns:
+        Analysis result with identified shopping items
+    """
+    try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be an image"
+            )
+        
+        # Read file content
+        image_content = await file.read()
+        
+        # Convert to base64
+        image_base64 = base64.b64encode(image_content).decode('utf-8')
+        
+        # Analyze the image
+        analysis_result = analyze_shopping_image(image_base64)
+        
+        return ImageAnalysisResponse(
+            success=True,
+            analysis=analysis_result
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error analyzing image: {e}")
+        return ImageAnalysisResponse(
+            success=False,
+            analysis="",
+            error=f"Failed to analyze image: {str(e)}"
         )
