@@ -202,7 +202,7 @@ export default function CopilotKitPage() {
   // Tool-based HITL: choose item
   useCopilotAction({
     name: "choose_item",
-    description: "Ask the user to choose an item id from the canvas.",
+    description: "Ask the user to choose an item id from the detected items.",
     available: "remote",
     parameters: [
       { name: "content", type: "string", required: false, description: "Prompt to display." },
@@ -1246,7 +1246,7 @@ export default function CopilotKitPage() {
 
   useCopilotAction({
     name: "syncCanvasToSheets",
-    description: "Manually sync current canvas state to Google Sheets.",
+    description: "Manually sync current SnapCart state to Google Sheets.",
     available: "remote",
     parameters: [],
     handler: async () => {
@@ -1255,7 +1255,7 @@ export default function CopilotKitPage() {
       }
       
       if (!viewState.items || viewState.items.length === 0) {
-        return "No items to sync. Canvas is empty.";
+        return "No items to sync. SnapCart is empty.";
       }
 
       try {
@@ -1287,14 +1287,14 @@ export default function CopilotKitPage() {
 
   useCopilotAction({
     name: "forceCanvasToSheetsSync",
-    description: "Force sync current canvas state to a specific Google Sheet, even if syncSheetId is not set.",
+    description: "Force sync current SnapCart state to a specific Google Sheet, even if syncSheetId is not set.",
     available: "remote",
     parameters: [
       { name: "sheetId", type: "string", required: true, description: "Google Sheet ID to sync to." },
     ],
     handler: async ({ sheetId }: { sheetId: string }) => {
       if (!viewState.items || viewState.items.length === 0) {
-        return "No items to sync. Canvas is empty.";
+        return "No items to sync. SnapCart is empty.";
       }
 
       try {
@@ -1490,9 +1490,9 @@ export default function CopilotKitPage() {
               <CopilotChat
                 className="flex-1 overflow-auto w-full"
                 labels={{
-                  title: "Photo Analysis Agent", // TODO: Update title for new agent
+                  title: "SnapCart Assistant",
                   initial:
-                    "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.", // TODO: Update initial message
+                    "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.",
                 }}
                 suggestions={[
                   {
@@ -1572,9 +1572,9 @@ export default function CopilotKitPage() {
           <CopilotPopup
             Header={PopupHeader}
             labels={{
-              title: "Photo Analysis Agent", // TODO: Update title for new agent
+              title: "SnapCart Assistant",
               initial:
-                "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.", // TODO: Update initial message
+                "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.",
             }}
             suggestions={[
               {
@@ -1615,7 +1615,7 @@ export default function CopilotKitPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">Connections</p>
                 <h2 id="sheets-modal-title" className="mt-1 text-lg font-semibold">Google Sheets</h2>
-                <p className="text-sm text-muted-foreground">Sync the canvas with a Sheet—create a new one or import an existing source.</p>
+                <p className="text-sm text-muted-foreground">Sync SnapCart with a Sheet—create a new one or import an existing source.</p>
               </div>
               <button
                 onClick={handleCloseSheetsModal}
@@ -1666,7 +1666,7 @@ export default function CopilotKitPage() {
                 <div className="space-y-4 rounded-2xl border border-dashed border-border/70 bg-card px-5 py-5">
                   <div className="text-sm text-foreground">
                     <span className="font-medium">Import an existing Sheet</span>
-                    <p className="mt-1 text-xs text-muted-foreground">Paste a Sheet link or ID. We’ll hydrate the canvas and keep the connection live.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Paste a Sheet link or ID. We'll hydrate SnapCart and keep the connection live.</p>
                   </div>
 
                   {importError && (
@@ -1717,7 +1717,7 @@ export default function CopilotKitPage() {
                         variant="secondary"
                         disabled={isImporting || isCreatingSheet || !availableSheets.length}
                       >
-                        {isImporting ? "Importing…" : "Import to Canvas"}
+                        {isImporting ? "Importing…" : "Import to SnapCart"}
                       </Button>
                     </div>
 
@@ -1751,7 +1751,7 @@ export default function CopilotKitPage() {
 
                 <div className="rounded-2xl border border-border/70 bg-muted px-5 py-4 text-xs text-muted-foreground">
                   <p><span className="font-medium text-foreground">Heads up:</span> New Sheets open in a new tab. If you import, ensure Composio has access to the document.</p>
-                  <p className="mt-2">We automatically map rows into projects, entities, notes, or charts so your canvas stays structured.</p>
+                  <p className="mt-2">We automatically map rows into projects, entities, notes, or charts so your SnapCart stays structured.</p>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1783,7 +1783,7 @@ export default function CopilotKitPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-destructive/80">Import check</p>
                 <h2 className="mt-1 text-lg font-semibold text-destructive">Format mismatch</h2>
-                <p className="text-sm text-destructive/80">Replacing your canvas will overwrite existing cards with what’s in the Sheet.</p>
+                <p className="text-sm text-destructive/80">Replacing your SnapCart will overwrite existing cards with what's in the Sheet.</p>
               </div>
               <button
                 onClick={() => {
@@ -1802,12 +1802,12 @@ export default function CopilotKitPage() {
                 <p className="font-medium">Sheet details</p>
                 <div className="mt-2 space-y-1 text-xs">
                   <p><span className="font-semibold uppercase tracking-wide">Sheet</span>: {formatWarningDetails.existingFormat}</p>
-                  <p><span className="font-semibold uppercase tracking-wide">Canvas</span>: {formatWarningDetails.canvasFormat}</p>
+                  <p><span className="font-semibold uppercase tracking-wide">SnapCart</span>: {formatWarningDetails.canvasFormat}</p>
                 </div>
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Importing will completely replace your current canvas data with the sheet contents. Your existing cards will be lost unless they’re saved elsewhere.
+                Importing will completely replace your current SnapCart data with the sheet contents. Your existing cards will be lost unless they're saved elsewhere.
               </p>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -1822,7 +1822,7 @@ export default function CopilotKitPage() {
                   variant="destructive"
                   className="flex-1"
                 >
-                  Replace canvas with sheet
+                  Replace SnapCart with sheet
                 </Button>
                 <Button
                   variant="outline"
@@ -1832,13 +1832,13 @@ export default function CopilotKitPage() {
                   }}
                   className="flex-1"
                 >
-                  Keep current canvas
+                  Keep current SnapCart
                 </Button>
               </div>
 
               <div className="rounded-2xl border border-border/70 bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">Tip</p>
-                <p className="mt-1">Consider creating a new Sheet or exporting your canvas JSON before importing if you might need to roll back.</p>
+                <p className="mt-1">Consider creating a new Sheet or exporting your SnapCart JSON before importing if you might need to roll back.</p>
               </div>
             </div>
           </div>

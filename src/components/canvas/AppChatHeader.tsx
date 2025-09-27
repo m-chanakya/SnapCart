@@ -11,14 +11,14 @@ export function AppChatHeader({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center gap-3">
           <Avatar className="size-8">
             <AvatarFallback className="bg-accent/10 text-sidebar-primary-foreground">
-              <span>🪁</span>
+              <span>🛒</span>
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-bold text-sidebar-foreground">CopilotKit Canvas</h3>
+            <h3 className="font-bold text-sidebar-foreground">SnapCart Assistant</h3>
             <div className="flex items-center gap-x-1.5 text-xs text-muted-foreground">
               <div className="inline-block size-1.5 rounded-full bg-green-500" />
-              <div>Online <span className="opacity-50 text-[90%] select-none">•</span> Ready to help</div>
+              <div>Online <span className="opacity-50 text-[90%] select-none">•</span> Ready to analyze photos</div>
             </div>
           </div>
         </div>
