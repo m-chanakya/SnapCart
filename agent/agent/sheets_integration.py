@@ -40,7 +40,11 @@ def get_composio_client():
     try:
         from composio import Composio
         user_id = os.getenv("COMPOSIO_USER_ID", "default")
-        return Composio(), user_id
+        api_key = os.getenv("COMPOSIO_API_KEY")
+        if api_key:
+            return Composio(api_key=api_key), user_id
+        else:
+            return Composio(), user_id
     except Exception as e:
         print(f"Failed to initialize Composio client: {e}")
         return None, None

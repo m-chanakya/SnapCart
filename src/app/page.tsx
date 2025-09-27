@@ -9,7 +9,7 @@ import AppChatHeader, { PopupHeader } from "@/components/canvas/AppChatHeader";
 import { X } from "lucide-react"
 import CardRenderer from "@/components/canvas/CardRenderer";
 import ShikiHighlighter from "react-shiki/web";
-import { motion, useScroll, useTransform, useMotionValueEvent } from "motion/react";
+// Motion imports removed - using custom scroll hook instead
 import { EmptyState } from "@/components/empty-state";
 import { cn, getContentArg } from "@/lib/utils";
 import type { AgentState, Item, ItemData, ProjectData, EntityData, NoteData, ChartData, CardType } from "@/lib/canvas/types";
@@ -18,10 +18,17 @@ import { projectAddField4Item, projectSetField4ItemText, projectSetField4ItemDon
 import useMediaQuery from "@/hooks/use-media-query";
 import ItemHeader from "@/components/canvas/ItemHeader";
 import NewItemMenu from "@/components/canvas/NewItemMenu";
+import PhotoUpload from "@/components/PhotoUpload";
+import ItemList, { ExtractedItem } from "@/components/ItemList";
+import ShoppingCarts from "@/components/ShoppingCarts";
+import HydrationBoundary from "@/components/HydrationBoundary";
+import { useHydration } from "@/hooks/use-hydration";
+import { useSimpleScroll } from "@/hooks/use-simple-scroll";
+import MotionSafe from "@/components/MotionSafe";
 
 export default function CopilotKitPage() {
   const { state, setState } = useCoAgent<AgentState>({
-    name: "sample_agent",
+    name: "sample_agent", // TODO: Change to new agent name to match layout.tsx and route.ts
     initialState,
   });
   
@@ -38,25 +45,20 @@ export default function CopilotKitPage() {
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [showJsonView, setShowJsonView] = useState<boolean>(false);
-  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
-  const { scrollY } = useScroll({ container: scrollAreaRef });
-  const headerScrollThreshold = 64;
-  const headerOpacity = useTransform(scrollY, [0, headerScrollThreshold], [1, 0]);
-  const [headerDisabled, setHeaderDisabled] = useState<boolean>(false);
+  const { scrollAreaRef, headerOpacity, headerDisabled, isHydrated } = useSimpleScroll();
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const descTextareaRef = useRef<HTMLInputElement | null>(null);
   const lastCreationRef = useRef<{ type: CardType; name: string; id: string; ts: number } | null>(null);
   const lastChecklistCreationRef = useRef<Record<string, { text: string; id: string; ts: number }>>({});
   const lastMetricCreationRef = useRef<Record<string, { label: string; value: number | ""; id: string; ts: number }>>({});
 
-  useMotionValueEvent(scrollY, "change", (y) => {
-    const disable = y >= headerScrollThreshold;
-    setHeaderDisabled(disable);
-    if (disable) {
+  // Handle input blur when header is disabled
+  useEffect(() => {
+    if (headerDisabled) {
       titleInputRef.current?.blur();
       descTextareaRef.current?.blur();
     }
-  });
+  }, [headerDisabled]);
 
   useEffect(() => {
     console.log("[CoAgent state updated]", state);
@@ -127,6 +129,7 @@ export default function CopilotKitPage() {
   };
 
 
+  // TODO: Update instructions for new photo analysis agent
   // Strengthen grounding: always prefer shared state over chat history
   useCopilotAdditionalInstructions({
     instructions: (() => {
@@ -137,6 +140,14 @@ export default function CopilotKitPage() {
         .slice(0, 5)
         .map((p: Item) => `id=${p.id} • name=${p.name} • type=${p.type}`)
         .join("\n");
+      
+      // TODO: Update field schema for photo analysis agent
+      // Should include fields for:
+      // - Photo analysis results
+      // - Detected items with names, quantities, brands
+      // - Amazon/Walmart availability and pricing
+      // - Shopping cart management
+      
       const fieldSchema = [
         "FIELD SCHEMA (authoritative):",
         "- project.data:",
@@ -154,6 +165,14 @@ export default function CopilotKitPage() {
         "- chart.data:",
         "  - field1: Array<{id: string, label: string, value: number | ''}> with value in [0..100] or ''",
       ].join("\n");
+      
+      // TODO: Update tool usage hints for photo analysis agent
+      // Should include tools for:
+      // - Photo upload and analysis
+      // - Item detection and extraction
+      // - Store availability checking
+      // - Shopping cart management
+      
       const toolUsageHints = [
         "TOOL USAGE HINTS:",
         "- To create cards, call createItem with { type: 'project' | 'entity' | 'note' | 'chart', name?: string } and use returned id.",
@@ -1343,17 +1362,127 @@ export default function CopilotKitPage() {
   ]);
 
   const [sheetId, setSheetId] = useState<string>('')
+  
+  // New state for photo upload and item extraction
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState<boolean>(false);
+  const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
+  const [confirmedItems, setConfirmedItems] = useState<ExtractedItem[]>([]);
+
+  // Handler for photo upload
+  const handlePhotoUpload = async (file: File) => {
+    setIsProcessingPhoto(true);
+    
+    // TODO: Replace with actual agent call for photo analysis
+    // The new agent should:
+    // 1. Accept photo upload
+    // 2. Analyze image to detect items
+    // 3. Return structured item data with names, quantities, brands
+    // 4. Optionally check availability on Amazon/Walmart
+    
+    // Simulate AI processing time
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Mock extracted items - in a real app, this would come from AI/ML processing
+    const mockItems: ExtractedItem[] = [
+      {
+        id: '1',
+        name: 'Nike Air Max 270',
+        quantity: 1,
+        brand: 'Nike',
+        price: 150.00,
+        category: 'Shoes'
+      },
+      {
+        id: '2',
+        name: 'Apple iPhone 15',
+        quantity: 1,
+        brand: 'Apple',
+        price: 999.00,
+        category: 'Electronics'
+      },
+      {
+        id: '3',
+        name: 'Coca-Cola Classic',
+        quantity: 6,
+        brand: 'Coca-Cola',
+        price: 4.99,
+        category: 'Beverages'
+      }
+    ];
+    
+    setExtractedItems(mockItems);
+    setIsProcessingPhoto(false);
+  };
+
+  // Handler for item updates
+  const handleItemUpdate = (id: string, updates: Partial<ExtractedItem>) => {
+    setExtractedItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, ...updates } : item
+      )
+    );
+  };
+
+  // Handler for item removal
+  const handleItemRemove = (id: string) => {
+    setExtractedItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Handler for confirming items
+  const handleConfirmItems = (items: ExtractedItem[]) => {
+    setConfirmedItems(items);
+    setExtractedItems([]); // Clear the extracted items after confirmation
+  };
+
+  // Handler for removing items from Quick Add section
+  const handleRemoveFromQuickAdd = (itemId: string) => {
+    setConfirmedItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  // Handler for adding items to shopping carts
+  const handleAddToCart = (item: ExtractedItem, store: 'amazon' | 'walmart') => {
+    // TODO: Integrate with new agent to:
+    // 1. Check item availability on the specified store
+    // 2. Get real-time pricing
+    // 3. Add item to store-specific cart
+    // 4. Update UI with actual store data
+    console.log(`Adding ${item.name} to ${store} cart`);
+  };
+
+  // Handler for removing items from shopping carts
+  const handleRemoveFromCart = (itemId: string, store: 'amazon' | 'walmart') => {
+    // TODO: Integrate with new agent to:
+    // 1. Remove item from store-specific cart
+    // 2. Update cart totals
+    // 3. Sync with store APIs if needed
+    console.log(`Removing item ${itemId} from ${store} cart`);
+  };
+
+  // Handler for updating quantities in shopping carts
+  const handleUpdateQuantity = (itemId: string, store: 'amazon' | 'walmart', quantity: number) => {
+    // TODO: Integrate with new agent to:
+    // 1. Update quantity in store-specific cart
+    // 2. Recalculate pricing and availability
+    // 3. Validate quantity limits
+    console.log(`Updating quantity for item ${itemId} in ${store} cart to ${quantity}`);
+  };
 
   return (
     <div
       style={{ "--copilot-kit-primary-color": "#2563eb" } as CopilotKitCSSProperties}
       className="h-screen flex flex-col"
+      suppressHydrationWarning={true}
     >
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Chat Sidebar */}
         <aside className="-order-1 max-md:hidden flex flex-col min-w-80 w-[30vw] max-w-120 p-4 pr-0">
           <div className="h-full flex flex-col align-start w-full shadow-lg rounded-2xl border border-sidebar-border overflow-hidden">
+            {/* SnapCart Branding */}
+            <div className="px-6 py-4 border-b border-sidebar-border bg-gradient-to-r from-blue-600 to-purple-600">
+              <h1 className="text-2xl font-bold text-white">SnapCart</h1>
+              <p className="text-sm text-blue-100">AI-Powered Shopping Assistant</p>
+            </div>
             {/* Chat Header */}
             <AppChatHeader />
             {/* Chat Content - conditionally rendered to avoid duplicate rendering */}
@@ -1361,187 +1490,108 @@ export default function CopilotKitPage() {
               <CopilotChat
                 className="flex-1 overflow-auto w-full"
                 labels={{
-                  title: "Agent",
+                  title: "Photo Analysis Agent", // TODO: Update title for new agent
                   initial:
-                    "👋 Share a brief or ask to extract fields. Changes will sync with the canvas in real time.",
+                    "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.", // TODO: Update initial message
                 }}
                 suggestions={[
                   {
-                    title: "Add a Project",
-                    message: "Create a new project.",
+                    title: "Analyze Photo", // TODO: Update suggestions for photo analysis
+                    message: "Upload a photo to detect items and check store availability.",
                   },
                   {
-                    title: "Add an Entity",
-                    message: "Create a new entity.",
+                    title: "Check Amazon Prices",
+                    message: "Search for items on Amazon.",
                   },
                   {
-                    title: "Add a Note",
-                    message: "Create a new note.",
+                    title: "Check Walmart Prices",
+                    message: "Search for items on Walmart.",
                   },
                   {
-                    title: "Add a Chart",
-                    message: "Create a new chart.",
+                    title: "Manage Shopping Carts",
+                    message: "View and manage your shopping carts.",
                   },
                 ]}
               />
             )}
           </div>
         </aside>
-        {/* Main Content */}
-        <main className="relative flex flex-1 h-full">
-          <div ref={scrollAreaRef} className="relative overflow-auto size-full px-4 sm:px-8 md:px-10 py-4">
-            <div className={cn(
-              "relative mx-auto max-w-7xl h-full min-h-8",
-              (showJsonView || (viewState.items ?? []).length === 0) && "flex flex-col",
-            )}>
-              {/* Global Title & Description (hidden in JSON view) */}
-              {!showJsonView && (
-                <motion.div style={{ opacity: headerOpacity }} className="sticky top-0 mb-6">
-                  <input
-                    ref={titleInputRef}
-                    disabled={headerDisabled}
-                    value={viewState?.globalTitle ?? initialState.globalTitle}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setState((prev) => ({ ...(prev ?? initialState), globalTitle: e.target.value }))
-                    }
-                    placeholder="Canvas title..."
-                    className={cn(titleClasses, "text-2xl font-semibold")}
-                  />
-                  <input
-                    ref={descTextareaRef}
-                    disabled={headerDisabled}
-                    value={viewState?.globalDescription ?? initialState.globalDescription}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setState((prev) => ({ ...(prev ?? initialState), globalDescription: e.target.value }))
-                    }
-                    placeholder="Canvas description..."
-                    className={cn(titleClasses, "mt-2 text-sm leading-6 resize-none overflow-hidden")}
-                  />
-                </motion.div>
-              )}
-              
-              {(viewState.items ?? []).length === 0 ? (
-                <EmptyState className="flex-1">
-                  <div className="mx-auto max-w-lg text-center">
-                    <h2 className="text-lg font-semibold text-foreground">Nothing here yet</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">Create your first item to get started.</p>
-                    <div className="mt-6 flex justify-center">
-                      <NewItemMenu onSelect={(t: CardType) => addItem(t)} align="center" className="md:h-10" />
-                    </div>
-                  </div>
-                </EmptyState>
-              ) : (
-                <div className="flex-1 py-0 overflow-hidden">
-                  {showJsonView ? (
-                    <div className="pb-16 size-full">
-                      <div className="rounded-2xl border shadow-sm bg-card size-full overflow-auto max-md:text-sm">
-                        <ShikiHighlighter language="json" theme="github-light">
-                          {JSON.stringify(getStatePreviewJSON(viewState), null, 2)}
-                        </ShikiHighlighter>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid gap-6 lg:grid-cols-2 pb-20">
-                      {(viewState.items ?? []).map((item) => (
-                        <article key={item.id} className="relative rounded-2xl border p-5 shadow-sm transition-colors ease-out bg-card hover:border-accent/40 focus-within:border-accent/60">
-                          <button
-                            type="button"
-                            aria-label="Delete card"
-                            className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-card text-gray-400 hover:bg-accent/10 hover:text-accent transition-colors"
-                            onClick={() => deleteItem(item.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                          <ItemHeader
-                            id={item.id}
-                            name={item.name}
-                            subtitle={item.subtitle}
-                            description={""}
-                            onNameChange={(v) => updateItem(item.id, { name: v })}
-                            onSubtitleChange={(v) => updateItem(item.id, { subtitle: v })}
-                          />
-
-                          <div className="mt-6">
-                            <CardRenderer item={item} onUpdateData={(updater) => updateItemData(item.id, updater)} onToggleTag={(tag) => toggleTag(item.id, tag)} />
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
+        {/* Main Content - New Layout */}
+        <main className="relative flex flex-1 h-full overflow-hidden">
+          <HydrationBoundary>
+            <div className="flex flex-1 gap-6 p-6 overflow-hidden">
+              {/* Center Content - Photo Upload and Item List */}
+              <div className="flex-1 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {/* Header Section */}
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+                  <h1 className="text-3xl font-bold mb-2">SnapCart</h1>
+                  <p className="text-blue-100">Upload a photo to detect items and compare prices on Amazon and Walmart</p>
                 </div>
-              )}
+
+                {/* Photo Upload Section */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Photo to Extract Items</h2>
+                  <PhotoUpload 
+                    onPhotoUpload={handlePhotoUpload}
+                    isProcessing={isProcessingPhoto}
+                  />
+                </div>
+
+                {/* Item List Section */}
+                <ItemList
+                  items={extractedItems}
+                  onConfirm={handleConfirmItems}
+                  onItemUpdate={handleItemUpdate}
+                  onItemRemove={handleItemRemove}
+                />
+              </div>
+
+              {/* Right Side - Shopping Carts */}
+              <div className="w-96 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <ShoppingCarts
+                  items={confirmedItems}
+                  onAddToCart={handleAddToCart}
+                  onRemoveFromCart={handleRemoveFromCart}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  onRemoveFromQuickAdd={handleRemoveFromQuickAdd}
+                />
+              </div>
             </div>
-          </div>
-          {(viewState.items ?? []).length > 0 ? (
-            <div className={cn(
-              "absolute left-1/2 -translate-x-1/2 bottom-4",
-              "inline-flex rounded-lg shadow-lg bg-card",
-              "[&_button]:bg-card [&_button]:w-22 md:[&_button]:h-10",
-              "[&_button]:shadow-none! [&_button]:hover:bg-accent",
-              "[&_button]:hover:border-accent [&_button]:hover:text-accent",
-              "[&_button]:hover:bg-accent/10!",
-            )}>
-              <NewItemMenu
-                onSelect={(t: CardType) => addItem(t)}
-                align="center"
-                className="rounded-r-none border-r-0 peer"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  "gap-1.25 text-base font-semibold rounded-none border-r-0",
-                  "peer-hover:border-l-accent!",
-                )}
-                onClick={() => {
-                  setShowSheetModal(true);
-                }}
-              >
-                📊 Sheets
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  "gap-1.25 text-base font-semibold rounded-l-none",
-                )}
-                onClick={() => setShowJsonView((v) => !v)}
-              >
-                {showJsonView
-                  ? "Canvas"
-                  : <>JSON</>
-                }
-              </Button>
-            </div>
-          ) : null}
+          </HydrationBoundary>
         </main>
       </div>
       <div className="md:hidden">
+        {/* Mobile Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+          <h1 className="text-2xl font-bold">SnapCart</h1>
+          <p className="text-sm text-blue-100">AI-Powered Shopping Assistant</p>
+        </div>
+        
         {/* Mobile Chat Popup - conditionally rendered to avoid duplicate rendering */}
         {!isDesktop && (
           <CopilotPopup
             Header={PopupHeader}
             labels={{
-              title: "Agent",
+              title: "Photo Analysis Agent", // TODO: Update title for new agent
               initial:
-                "👋 Share a brief or ask to extract fields. Changes will sync with the canvas in real time.",
+                "👋 Upload a photo to analyze items and check availability on Amazon and Walmart.", // TODO: Update initial message
             }}
             suggestions={[
               {
-                title: "Add a Project",
-                message: "Create a new project.",
+                title: "Analyze Photo", // TODO: Update suggestions for photo analysis
+                message: "Upload a photo to detect items and check store availability.",
               },
               {
-                title: "Add an Entity",
-                message: "Create a new entity.",
+                title: "Check Amazon Prices",
+                message: "Search for items on Amazon.",
               },
               {
-                title: "Add a Note",
-                message: "Create a new note.",
+                title: "Check Walmart Prices",
+                message: "Search for items on Walmart.",
               },
               {
-                title: "Add a Chart",
-                message: "Create a new chart.",
+                title: "Manage Shopping Carts",
+                message: "View and manage your shopping carts.",
               },
             ]}
           />

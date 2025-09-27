@@ -5,6 +5,8 @@ import { GeistMono } from "geist/font/mono";
 import { CopilotKit } from "@copilotkit/react-core";
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
+import ClientOnly from "@/components/ClientOnly";
+import HydrationFix from "@/components/HydrationFix";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -24,14 +26,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${manrope.variable} ${GeistMono.variable}`}>
-      <body className="subpixel-antialiased">
-        <CopilotKit
-          runtimeUrl="/api/copilotkit"
-          agent="sample_agent"
-          publicApiKey={process.env.COPILOT_CLOUD_PUBLIC_API_KEY} // optional (for CopilotKit Cloud features)
-        >
-          {children}
-        </CopilotKit>
+      <body className="subpixel-antialiased" suppressHydrationWarning={true}>
+        <HydrationFix />
+        <ClientOnly>
+          <CopilotKit
+            runtimeUrl="/api/copilotkit"
+            agent="sample_agent" // TODO: Change to new agent name (e.g., "photo_analysis_agent")
+            publicApiKey={process.env.COPILOT_CLOUD_PUBLIC_API_KEY} // optional (for CopilotKit Cloud features)
+          >
+            {children}
+          </CopilotKit>
+        </ClientOnly>
       </body>
     </html>
   );

@@ -39,7 +39,11 @@ def _load_composio_tools() -> List[Any]:
         return []
     try:
         print(f"Loading Composio tools: {tool_ids} for user: {user_id}")
-        composio = Composio(provider=LlamaIndexProvider())
+        api_key = os.getenv("COMPOSIO_API_KEY")
+        if api_key:
+            composio = Composio(api_key=api_key, provider=LlamaIndexProvider())
+        else:
+            composio = Composio(provider=LlamaIndexProvider())
         tools = composio.tools.get(user_id=user_id, tools=tool_ids)
         print(f"Successfully loaded {len(tools) if tools else 0} tools")
         # "tools" should be a list of LlamaIndex-compatible Tool objects
